@@ -19,9 +19,6 @@ jobs:
     - name: dotnet publish
       run: |
         dotnet publish -c Release -o ${{env.DOTNET_ROOT}}/GitHubWebApp 
-    - uses: azure/login@v1
-      with:
-        creds: ${{ secrets.AZURE_CREDENTIALS }}
 
     - uses: azure/docker-login@v1
       with:
@@ -34,6 +31,9 @@ jobs:
         docker push ${{ secrets.REGISTRY_SERVERNAME }}.azurecr.io/GitHubWebApp:${{ github.sha }} 
       
     ## This section should be commented as we haven't created the Azure web app yet
+    # - uses: azure/login@v1
+    #  with:
+    #    creds: ${{ secrets.AZURE_CREDENTIALS }}
     # - uses: azure/webapps-container-deploy@v1
     #  with:
     #    app-name: 'GithubDotNetCoreContainer'
