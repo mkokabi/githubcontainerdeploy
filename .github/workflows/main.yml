@@ -38,7 +38,7 @@ jobs:
     #  with:
     #    app-name: 'GithubDotNetCoreContainer'
     #    images: '${{ secrets.REGISTRY_SERVERNAME }}.azurecr.io/GitHubWebApp:${{ github.sha }}'
-    
-    - name: Azure logout
-      run: |
-        az logout
+    #
+    # - name: Azure logout
+    #  run: |
+    #    az logout
