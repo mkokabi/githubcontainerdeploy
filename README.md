@@ -2,25 +2,33 @@
 
 This is a sample project to demonstrate deploying a DotNet core application to Azure Container using GitHub CI workflow.
 
-### step 1
-Creating a Azure Container registry. 
-It's not neccessary to use Azure Container Registry and Docker hub or a local registry can be used as well but here I have used AzureCR.
+If you don't need the container you can visit this 
+[post](https://dev.to/mkokabi/deploying-dotnet-core-web-app-to-azure-using-github-workflow-459d)
+
+## Caveat
+In the container deploying action we need the app-name but for creating the azure web app we need to chose a contanier image. (Chicken-Egg situation). The easy solution I chose is:
+- Create a container registry. (this step is not relevant and Docker hub can be used)
+- Workflow at the first stage, only build the code and create the docker image and push it to CR (container registry). Run it at least once.
+- Create the azure web app and choose the CR and the image which has been created in above step.
+- Now, enhance the workflow to deploy the image to the azure web app. 
+
+## Step 1 - Creating a Azure Container registry. 
+As mentioned before it's not neccessary to use Azure Container Registry and Docker hub or a any other CR can be used instead but here I have used AzureCR.
 
 ![Creating Docker registry](https://github.com/mkokabi/githubcontainerdeploy/blob/master/images/image0.png?raw=true)
 
 ![Creating Docker registry](https://github.com/mkokabi/githubcontainerdeploy/blob/master/images/image01.png?raw=true)
 
-Get the username and password of Docker Reigstry
+Get the username and password and the server name of CR. The server name which is needed later should be lowercase so get it from the Login server without the *azurecr.io*.
 ![Getting the registry credentials](https://github.com/mkokabi/githubcontainerdeploy/blob/master/images/image02.png?raw=true)
 
-### step 2
-Creating a DotNet project
+## Step 2 - Creating a DotNet project
 
 ![Getting the registry credentials](https://github.com/mkokabi/githubcontainerdeploy/blob/master/images/image3.png?raw=true)
 
-### step 3
+## Step 3
 Adding a Dockerfile to your project. 
-If you use the Visual Studio to create your web project it would be created but if you use CLI you need to put your own
+If you use the Visual Studio to create your web project it would be created for you but if you use CLI you need to put your own. 
 ```Dockerfile
 FROM mcr.microsoft.com/dotnet/core/sdk:3.1-buster AS build
 WORKDIR /src
@@ -40,8 +48,8 @@ COPY --from=build /src/GitHubWebApp/publish ./
 ENTRYPOINT ["dotnet", "GitHubWebApp.dll"]
 ```
 
-### step 4
-Pushing your code to Github
+## Step 4
+Pushing your code to the Github repostiroy
 ```PowerShell
 git init
 git remote add origin https://github.com/mkokabi/githubcontainerdeploy.git
@@ -51,24 +59,24 @@ git commit -m "First commit including the DockerFile"
 git push --set-upstream origin master
 ```
 
-### step 5
+## Step 5
 Adding security settings. In our workflow we need 4 settings. 
-At this stage we should set 3 of them to be able to push or container to registry.
+At this stage we should set 3 of them to be able to push our docker image to registry.
 - REGISTRY_SERVERNAME
 - REGISTRY_USERNAME
 - REGISTRY_PASSWORD
 
-*note:* the registry_servername should be in lower case. You can copy this from Login server and remove the azurecr.io.
+*note:* the registry_servername should be in lower case. You can copy this from Login server and remove the *azurecr.io*.
 
 Later we need to create the next one for deploying our application to the web app.
 
 ![Creating github security](https://github.com/mkokabi/githubcontainerdeploy/blob/master/images/image5.png?raw=true)
 
 
-### step 6
+## Step 6
 Creating github workflow
 
-![Creating github action](https://github.com/mkokabi/githubcontainerdeploy/blob/master/images/image3.png?raw=true)
+![Creating github action](https://github.com/mkokabi/githubcontainerdeploy/blob/master/images/image4.png?raw=true)
 
 Select "Set up a workflow yourself"
 Replace the steps with 
@@ -110,22 +118,23 @@ Replace the steps with
 ```
 
 The build should be successfull.
-![Build result](https://github.com/mkokabi/githubcontainerdeploy/blob/master/images/
-image7.png?raw=true)
+![Build result](https://github.com/mkokabi/githubcontainerdeploy/blob/master/images/image7.png?raw=true)
 
-### step 7
+## Step 7
 Creating an Azure web app. 
 
 ![Creating Azure Web app](https://github.com/mkokabi/githubcontainerdeploy/blob/master/images/image1.png?raw=true)
 
 Selecting the container we have created in step 6
+
 ![Selecting the container for web app](https://github.com/mkokabi/githubcontainerdeploy/blob/master/images/image12.jpg?raw=true)
 
 Test the web app.
+
 ![Testing web app](https://github.com/mkokabi/githubcontainerdeploy/blob/master/images/image6.png?raw=true)
 
 
-### step 8
+## Step 8
 Create the Role based Access to the web app using the following az. 
 ```
 az ad sp create-for-rbac --name "{your-web-app}" --role contributor \
@@ -133,14 +142,14 @@ az ad sp create-for-rbac --name "{your-web-app}" --role contributor \
                             --sdk-auth
 ```
 
-Remember to replace {your-web-app}, {subscription-id} and {resource-group} with your web app name,  subscription id and the resource group of the web application.
+Remember to replace {your-web-app}, {subscription-id} and {resource-group} with your web app name, subscription id and the resource group of the web application.
 This command will return a json. 
 
 ref: https://github.com/Azure/login#configure-azure-credentials
 
-### step 9
-Add the json returned in above step into another security in github settings named *AZURE_CREDENTIALS*.
+## Step 9
+Add the json returned in above step into another security in github security settings named *AZURE_CREDENTIALS*.
 
 
-### step 10
+## Step 10
 Uncomment the container deploy section now.
