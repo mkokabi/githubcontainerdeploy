@@ -37,7 +37,7 @@ jobs:
 
     - uses: azure/webapps-container-deploy@v1
       with:
-       app-name: 'GithubDotNetCoreContainer'
+       app-name: 'WebAppContainerGitHubDeploy'
        images: '${{ secrets.REGISTRY_SERVERNAME }}.azurecr.io/githubwebapp:${{ github.sha }}'
        
     - name: Azure logout
