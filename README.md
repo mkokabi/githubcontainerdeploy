@@ -51,4 +51,76 @@ git push --set-upstream origin master
 ```
 
 ### step 5
+Adding security settings. In our workflow we need 4 settings. 
+At this stage we should set 3 of them to be able to push or container to registry.
+- REGISTRY_SERVERNAME
+- REGISTRY_USERNAME
+- REGISTRY_PASSWORD
+*note:* the registry_servername should be in lower case. You can copy this from Login server and remove the azurecr.io.
+
+Later we need to create the next one for deploying our application to the web app.
+
+![Creating github action](https://github.com/mkokabi/githubcontainerdeploy/blob/master/images/image5.png?raw=true)
+
+
+### step 6
 Creating github workflow
+![Creating github action](https://github.com/mkokabi/githubcontainerdeploy/blob/master/images/image3.png?raw=true)
+
+Select "Set up a workflow yourself"
+Replace the steps with 
+```YAML
+    steps:
+    - uses: actions/checkout@v2
+      name: checkout
+      
+    - uses: actions/setup-dotnet@v1
+      with:
+        dotnet-version: '3.1.100' # SDK Version to use.
+    - run: dotnet build --configuration Release
+
+    - name: dotnet publish
+      run: |
+        dotnet publish -c Release -o ${{env.DOTNET_ROOT}}/GitHubWebApp 
+    
+    - uses: azure/docker-login@v1
+      with:
+        login-server: ${{ secrets.REGISTRY_SERVERNAME }}.azurecr.io
+        username: ${{ secrets.REGISTRY_USERNAME }}
+        password: ${{ secrets.REGISTRY_PASSWORD }}
+    
+    - run: |
+        docker build GitHubWebApp -t ${{ secrets.REGISTRY_SERVERNAME }}.azurecr.io/GitHubWebApp:${{ github.sha }}
+        docker push ${{ secrets.REGISTRY_SERVERNAME }}.azurecr.io/GitHubWebApp:${{ github.sha }} 
+      
+    ## This section should be commented as we haven't created the Azure web app yet
+    # - uses: azure/login@v1
+    #   with:
+    #     creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+    # - uses: azure/webapps-container-deploy@v1
+    #  with:
+    #    app-name: 'GithubDotNetCoreContainer'
+    #    images: '${{ secrets.REGISTRY_SERVERNAME }}.azurecr.io/GitHubWebApp:${{ github.sha }}'
+    
+    - name: Azure logout
+      run: |
+        az logout
+```
+
+### step 7
+Creating an Azure web app. 
+
+### step 8
+Create the Role based Access to the web app using the following az. 
+```
+az ad sp create-for-rbac --name "{your-web-app}" --role contributor \
+                            --scopes /subscriptions/{subscription-id}/resourceGroups/{resource-group} \
+                            --sdk-auth
+```
+Remember to replace {your-web-app}, {subscription-id} and {resource-group} with your web app name,  subscription id and the resource group of the web application.
+
+ref: https://github.com/Azure/login#configure-azure-credentials
+
+### step 10
+Uncomment the container deploy section now.
